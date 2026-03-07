@@ -5,7 +5,7 @@ setup_logging()
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import products
+from routers import products, web_search_agent
 from database import connect_db, close_db
 
 
@@ -28,6 +28,7 @@ app.add_middleware(
 )
 
 app.include_router(products.router)
+app.include_router(web_search_agent.router)
 
 @app.get("/")
 def read_root():
