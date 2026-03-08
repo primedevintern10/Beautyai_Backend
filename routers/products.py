@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 from motor.motor_asyncio import AsyncIOMotorCollection
-from database import get_products_collection
+from config.database import get_products_collection
 from model import Product
 from collections import defaultdict
 

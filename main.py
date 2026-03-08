@@ -1,17 +1,21 @@
 # main.py
-from logging_config import setup_logging
+from config.logging_config import setup_logging
 setup_logging()
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import products, web_search_agent
-from database import connect_db, close_db
+from routers import products, web_search_agent,product_recommender
+from config.database import connect_db, close_db,get_all_categories,_CACHED_CATEGORIES
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await connect_db()
+    categories = await get_all_categories()
+    _CACHED_CATEGORIES.clear()
+    _CACHED_CATEGORIES.extend(categories)
+
     yield
     await close_db()
 
@@ -29,6 +33,7 @@ app.add_middleware(
 
 app.include_router(products.router)
 app.include_router(web_search_agent.router)
+app.include_router(product_recommender.router)
 
 @app.get("/")
 def read_root():
