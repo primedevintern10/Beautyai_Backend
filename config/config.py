@@ -11,6 +11,11 @@ MONGODB_URI = os.getenv("MONGODB_URI")
 DATABASE_NAME = os.getenv("DATABASE_NAME", "BeautyMartDB")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME", "products")
 
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+MODEL_MINI = os.getenv("MODE_MINI", "gpt-4o-mini")
+MODEL = os.getenv("MODEL", "gpt-4o")
+MODEL_NANO = os.getenv("MODEL_NANO", "gpt-4o-mini")
 
 if not MONGODB_URI:
     logger.critical(

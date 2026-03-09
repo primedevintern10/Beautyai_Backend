@@ -1,9 +1,22 @@
-
+# Web framework
 fastapi
-uvicorn[standard]          
-openai                     
-pydantic                   
-python-dotenv              
-httpx       
+uvicorn[standard]
+
+# Database
 pymongo
-motor               
+motor
+
+# AI / Agents
+openai
+langchain
+langchain-openai
+langchain-tavily
+langchain-core
+
+
+# Data validation
+pydantic
+python-dotenv
+
+# HTTP
+httpx
