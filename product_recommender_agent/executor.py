@@ -1,17 +1,45 @@
+import json
 import logging
-from typing import List, Dict
+from typing import Any, Dict, List, Optional
+from langchain_core.messages import AIMessage, ToolMessage
 from .agent import agent
 from .tools import _keywords_cache
 from .prompts import RECOMMENDER_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
 
+
+def _extract_products(messages: List[Any]) -> Optional[List[Dict]]:
+    """Return the products list from the last successful query_products tool call, or None."""
+    product_call_ids: set = set()
+    for msg in messages:
+        if isinstance(msg, AIMessage) and msg.tool_calls:
+            for tc in msg.tool_calls:
+                if tc.get("name") == "query_products":
+                    product_call_ids.add(tc["id"])
+
+    if not product_call_ids:
+        return None
+
+    for msg in reversed(messages):
+        if isinstance(msg, ToolMessage) and msg.tool_call_id in product_call_ids:
+            try:
+                content = json.loads(msg.content) if isinstance(msg.content, str) else {}
+                if content.get("status") == "success" and content.get("products"):
+                    return content["products"]
+            except (json.JSONDecodeError, AttributeError, TypeError):
+                pass
+
+    return None
+
+
 async def run_recommender_agent(
     messages: List[Dict[str, str]],
     thread_id: str = "default_session"
-) -> str:
+) -> Dict[str, Any]:
     """
     Build a fully-formatted system prompt + real message history, then invoke the agent.
+    Returns {"response": str, "routine": RoutineOutput | None}.
     """
     last_user_message = next(
         (m["content"] for m in reversed(messages) if m["role"] == "user"),
@@ -51,8 +79,12 @@ async def run_recommender_agent(
             f"[EXECUTOR OUT] Thread: {thread_id}\n"
             f"  Agent Reply  : {agent_reply[:300]}{'...' if len(agent_reply) > 300 else ''}"
         )
-        return agent_reply
-
     except Exception as e:
         logger.error(f"[EXECUTOR ERROR] Thread: {thread_id} | {e}", exc_info=True)
         raise
+
+    products = _extract_products(result["messages"])
+    if products:
+        logger.info(f"[EXECUTOR PRODUCTS] Thread: {thread_id} | Extracted {len(products)} product(s) for frontend")
+
+    return {"response": agent_reply, "products": products}

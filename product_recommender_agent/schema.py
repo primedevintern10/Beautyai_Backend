@@ -1,6 +1,6 @@
 # product_recommender_agent/schema.py
 import logging
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal
 from pydantic import BaseModel, Field
 from langchain_core.callbacks import BaseCallbackHandler
 

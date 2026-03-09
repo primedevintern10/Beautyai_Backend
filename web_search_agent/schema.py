@@ -31,11 +31,28 @@ class LLMLoggerCallback(BaseCallbackHandler):
         **__: Any,
     ) -> None:
         model_name = serialized.get("kwargs", {}).get("model_name", "unknown_model")
-        message_count = sum(len(m) for m in messages)
+        all_msgs = [msg for batch in messages for msg in batch]
+        message_count = len(all_msgs)
+
+        last_user = next(
+            (m for m in reversed(all_msgs) if getattr(m, "type", "") == "human"),
+            None
+        )
+        last_system = next(
+            (m for m in reversed(all_msgs) if getattr(m, "type", "") == "system"),
+            None
+        )
+
+        def truncate(text: str, limit: int = 200) -> str:
+            return text[:limit] + "..." if len(text) > limit else text
+
+        user_content = truncate(getattr(last_user, "content", "N/A")) if last_user else "N/A"
+        system_content = truncate(getattr(last_system, "content", "N/A")) if last_system else "N/A"
+
         logger.info(
-            f"[LLM START] Model: {model_name} | "
-            f"Run ID: {run_id} | "
-            f"Messages: {message_count}"
+            f"[LLM START] Model: {model_name} | Run ID: {run_id} | Messages: {message_count}\n"
+            f"  Last User   : {user_content}\n"
+            f"  Last System : {system_content}"
         )
 
     def on_llm_new_token(self, token: str, *, run_id: str, **__: Any) -> None:

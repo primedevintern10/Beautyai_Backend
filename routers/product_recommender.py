@@ -12,8 +12,8 @@ router = APIRouter(prefix="/recommend", tags=["recommend"])
 async def recommend_chat(body: RecommendRequest):
     try:
         messages = [{"role": m.role, "content": m.content} for m in body.messages]
-        response = await run_recommender_agent(messages)
-        return {"response": response}
+        result = await run_recommender_agent(messages)
+        return result
     except Exception as e:
         logger.error(f"Recommender endpoint error: {e}")
         raise HTTPException(status_code=500, detail="Recommender agent failed. Please try again.")

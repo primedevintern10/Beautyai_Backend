@@ -21,7 +21,7 @@ _ROUTINE_FIELDS = {
     "price": 1, "skin_types": 1, "hair_types": 1,
     "concerns": 1, "ingredients": 1, "exclusions": 1,
     "texture": 1, "averageRating": 1, "reviewCount": 1,
-    "isBestseller": 1,
+    "isBestseller": 1, "reviews": 1,
 }
 
 
