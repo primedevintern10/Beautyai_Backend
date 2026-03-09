@@ -34,11 +34,21 @@ class LLMLoggerCallback(BaseCallbackHandler):
         **__: Any,
     ) -> None:
         model_name = serialized.get("kwargs", {}).get("model_name", "unknown_model")
-        message_count = sum(len(m) for m in messages)
+        all_msgs = [msg for batch in messages for msg in batch]
+        message_count = len(all_msgs)
+
+        last_system = next(
+            (m for m in reversed(all_msgs) if getattr(m, "type", "") == "system"),
+            None
+        )
+
+        # Show only first line of system prompt to keep log clean
+        raw_system = getattr(last_system, "content", "") if last_system else ""
+        system_summary = (raw_system.split("\n")[0])[:120]
+
         logger.info(
-            f"[LLM START] Model: {model_name} | "
-            f"Run ID: {run_id} | "
-            f"Messages: {message_count}"
+            f"[LLM START] Model: {model_name} | Run ID: {run_id} | Messages: {message_count} | "
+            f"System: {system_summary}"
         )
 
     def on_llm_new_token(self, token: str, *, run_id: str, **__: Any) -> None:
@@ -48,12 +58,24 @@ class LLMLoggerCallback(BaseCallbackHandler):
         usage = {}
         if hasattr(response, "llm_output") and response.llm_output:
             usage = response.llm_output.get("token_usage", {})
-        logger.info(
-            f"[LLM END] Run ID: {run_id} | "
-            f"Prompt tokens: {usage.get('prompt_tokens', 'N/A')} | "
-            f"Completion tokens: {usage.get('completion_tokens', 'N/A')} | "
-            f"Total tokens: {usage.get('total_tokens', 'N/A')}"
+
+        tokens = (
+            f"Prompt: {usage.get('prompt_tokens', 'N/A')} | "
+            f"Completion: {usage.get('completion_tokens', 'N/A')} | "
+            f"Total: {usage.get('total_tokens', 'N/A')}"
         )
+
+        # Only log output for tool calls — text replies are already shown in [EXECUTOR OUT]
+        gens = getattr(response, "generations", None)
+        tool_call_label = ""
+        if gens and gens[0]:
+            msg = getattr(gens[0][0], "message", None)
+            tool_calls = getattr(msg, "tool_calls", [])
+            if tool_calls:
+                names = [tc.get("name", "?") for tc in tool_calls]
+                tool_call_label = f" | Output: [tool call] -> {', '.join(names)}"
+
+        logger.info(f"[LLM END] Run ID: {run_id} | {tokens}{tool_call_label}")
 
     def on_llm_error(self, error: BaseException, *, run_id: str, **__: Any) -> None:
         logger.error(
